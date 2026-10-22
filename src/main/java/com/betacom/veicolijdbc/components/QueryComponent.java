@@ -1,141 +1,132 @@
 package com.betacom.veicolijdbc.components;
 
-
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.BeanWrapper;
-import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.betacom.veicolijdbc.dao.MacchinaDAO;
 import com.betacom.veicolijdbc.dao.VeicoloDAO;
 import com.betacom.veicolijdbc.exceptions.AcademyException;
-import com.betacom.veicolijdbc.models.Macchina;
+import com.betacom.veicolijdbc.handlers.VehicleHandler;
 import com.betacom.veicolijdbc.models.Veicolo;
 import com.betacom.veicolijdbc.utilities.GestioneFile;
 import com.betacom.veicolijdbc.utilities.Utilities;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 @Component
 public class QueryComponent {
-	
-	public final String FILE_INPUT  = "input.txt";
-	private final MacchinaDAO daoM;
+
+	public static final String FILE_INPUT = "input.txt";
+	public static final String FILE_OUTPUT = "output/veicoli_output.txt";
+
+	private final Map<String, VehicleHandler> handlers;
 	private final VeicoloDAO daoV;
- 
-	@Transactional
+
+	public QueryComponent(List<VehicleHandler> handlerList, VeicoloDAO daoV) {
+		this.handlers = handlerList.stream()
+				.collect(Collectors.toMap(VehicleHandler::type, Function.identity()));
+		this.daoV = daoV;
+		log.debug("Tipi di veicolo gestiti: {}", handlers.keySet());
+	}
+
+	// Niente @Transactional qui: ogni comando ha la sua transazione (vedi AbstractVehicleHandler),
+	// così un errore SQL su una riga non blocca le righe successive.
 	public void execute() {
-		
-		/*
-		log.debug("Begin QueryComponent");
-		List<Dipendenti> lD = daoD.findAll();
-		
-		lD.forEach(d -> log.debug(d.toString()));
-		
-		log.debug("+++++ byId ******");
-		Optional<Dipendenti> dopt = daoD.findById(13);
-		if(dopt.isEmpty())
-			log.debug("record non trovato");
-		else
-			log.debug(dopt.toString());
-		
-		log.debug("*** stipendio > 1300");
-		lD = daoD.findBySalaryGreater(1300.0);
-		lD.forEach(d -> log.debug(d.toString()));
-		
-		log.debug("*** count stipendio > 1500");
-		log.debug("numero trovato {}", daoD.countBySalaryGreater(1500.0)); */
-		
-		
-		//public static final String FILE_OUTPUT = "output/veicoli_output.txt";
-		//public static final String FILE_JSON   = "output/veicoli.json";
-		
-		String percorso = FILE_INPUT;
-		log.info("Start Veicoli, file di input: {}", percorso);
+		log.info("Start Veicoli, file di input: {}", FILE_INPUT);
+
+		List<String> righe;
 		try {
-			List<String> righe = GestioneFile.leggi(percorso);
-			log.info("Lette {} righe", righe.size());
-			//GestioneFile.inizializza(Configurazione.FILE_OUTPUT);
-			
-			for (int n = 0; n < righe.size(); n++) {
-				String riga = righe.get(n);
-				
-				String[] token = Arrays.stream(riga.split(","))
-						.map(String::trim)
-						.toArray(String[]::new);
-				
-				switch(token[0]) {
-					case "add" -> {
-						if(token[1].equals("macchina")) {
-							Map<String, String> parametri = Utilities.parseParametri(token, 2);
-							Macchina m = Macchina.builder()
-							.tipo_veicolo(token[1])
-							.alimentazione(parametri.get("alimentazione"))
-							.categoria(parametri.get("categoria"))
-							.colore(parametri.get("colore"))
-							.marca(parametri.get("marca"))
-							.modello(parametri.get("modello"))
-							.anno(Integer.parseInt(parametri.get("anno")))
-							.ruote(Integer.parseInt(parametri.get("ruote")))
-							.targa(parametri.get("targa"))
-							.porte(Integer.parseInt(parametri.get("porte")))
-							.cc(Integer.parseInt(parametri.get("cc")))
-							.build();
-							
-							int idMacchina = daoM.insert(m);
-							log.debug("Id Auto inserita: {}", idMacchina);
-						}
-					}
-					case "findAll" -> {
-						if(token[1].equals("veicolo")){
-							List<Veicolo> lista = daoV.findAll();
-							lista.forEach(v -> log.debug(v.toString()));
-						}
-					}
-					case "update" -> {
-					    if (token[1].equals("macchina")) {
-					        int idMacchina = Integer.parseInt(token[2]);
-					        Map<String, String> parametri = Utilities.parseParametri(token, 3);
-
-					        Macchina m = daoM.findById(idMacchina)
-					                .orElseThrow(() -> new AcademyException("Macchina non trovata: " + idMacchina));
-
-					        BeanWrapper wrapper = new BeanWrapperImpl(m);
-					        parametri.forEach((key, value) -> {
-					            if (wrapper.isWritableProperty(key)) {
-					                wrapper.setPropertyValue(key, value);
-					            } else {
-					                log.warn("Attributo non valido per macchina: {}", key);
-					            }
-					        });
-
-					        daoM.update(m);
-					        log.debug("Macchina aggiornata: {}", m);
-					    }
-					}
-					case "delete" -> {
-					    if (token[1].equals("macchina")) {
-					        int idMacchina = Integer.parseInt(token[2]);
-					        int result = daoM.delete(idMacchina);
-
-					        if (result == 0)
-					            log.warn("Nessuna macchina trovata con id {}", idMacchina);
-					        else
-					            log.debug("Macchina {} eliminata", idMacchina);
-					    }
-					}
-				}	
-			}		
+			righe = GestioneFile.leggi(FILE_INPUT);
+			GestioneFile.inizializza(FILE_OUTPUT);
 		} catch (AcademyException e) {
 			log.warn(e.getMessage());
+			return;
 		}
-		log.info("End Veicoli");	
+		log.info("Lette {} righe", righe.size());
+
+		for (int n = 0; n < righe.size(); n++) {
+			String riga = righe.get(n);
+			if (riga.isBlank()) {
+				continue;
+			}
+			String[] token = Arrays.stream(riga.split(","))
+					.map(String::trim)
+					.toArray(String[]::new);
+
+			try {
+				executeLine(token);
+			} catch (RuntimeException e) {
+				log.warn("Riga {} ignorata ({}): {}", n + 1, riga.trim(), e.getMessage());
+			}
+		}
+
+		log.info("End Veicoli");
+	}
+
+	private void executeLine(String[] t) {
+		switch (t[0]) {
+			case "add" -> {
+				requireTokens(t, 3);
+				handlerFor(t[1]).add(Utilities.parseParametri(t, 2));
+			}
+			case "update" -> {
+				requireTokens(t, 4);
+				handlerFor(t[1]).update(parseId(t[2]), Utilities.parseParametri(t, 3));
+			}
+			case "delete" -> {
+				requireTokens(t, 3);
+				handlerFor(t[1]).delete(parseId(t[2]));
+			}
+			case "findById" -> {
+				requireTokens(t, 2);
+				// findById,11 -> veicolo generico | findById,macchina,11 -> tipo specifico
+				Optional<? extends Veicolo> found = (t.length == 2)
+						? daoV.findById(parseId(t[1]))
+						: handlerFor(t[1]).findById(parseId(t[2]));
+				found.ifPresentOrElse(
+						v -> log.debug("Trovato: {}", v),
+						() -> log.warn("Nessun veicolo trovato per: {}", String.join(",", t)));
+			}
+			case "findAll" -> {
+				List<Veicolo> veicoli = daoV.findAll();
+			    List<String> output = new ArrayList<>();
+			    output.add("=== Elenco veicoli (" + veicoli.size() + ") ===");
+			    veicoli.forEach(v -> output.add(v.toString()));
+			    output.add("");
+			    GestioneFile.aggiungi(FILE_OUTPUT, output);
+			    log.debug("Scritti {} veicoli su {}", veicoli.size(), FILE_OUTPUT);
+			}
+			default -> throw new AcademyException("Comando sconosciuto: " + t[0]);
+		}
+	}
+
+	private VehicleHandler handlerFor(String type) {
+		VehicleHandler h = handlers.get(type);
+		if (h == null) {
+			throw new AcademyException("Tipo veicolo sconosciuto: " + type);
+		}
+		return h;
+	}
+
+	private void requireTokens(String[] t, int min) {
+		if (t.length < min) {
+			throw new AcademyException("Comando '" + t[0] + "' richiede almeno "
+					+ min + " parametri, trovati " + t.length);
+		}
+	}
+
+	private int parseId(String s) {
+		try {
+			return Integer.parseInt(s);
+		} catch (NumberFormatException e) {
+			throw new AcademyException("Id non valido: " + s);
+		}
 	}
 }

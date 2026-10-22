@@ -1,6 +1,5 @@
 package com.betacom.veicolijdbc.models;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,9 +9,8 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@ToString
+@ToString(callSuper = true)
 @SuperBuilder
-public class Moto {
-	private Integer id;
+public class Moto extends Veicolo {
+	private String tipo_forcella;
 }
