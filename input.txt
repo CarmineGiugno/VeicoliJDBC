@@ -1,0 +1,5 @@
+add,macchina,ruote=4,alimentazione=diesel,categoria=strada,colore=bianco,marca=Fiat,anno=2025,modello=500,targa=MK234GX,cc=1200,porte=4
+findAll,veicolo
+findById, 11
+delete, macchina,11
+update,macchina,8,marca=bmw,colore=rosso 
