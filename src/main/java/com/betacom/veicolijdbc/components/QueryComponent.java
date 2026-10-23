@@ -94,14 +94,10 @@ public class QueryComponent {
 						v -> log.debug("Trovato: {}", v),
 						() -> log.warn("Nessun veicolo trovato per: {}", String.join(",", t)));
 			}
-			case "findAll" -> {
-				List<Veicolo> veicoli = daoV.findAll();
-			    List<String> output = new ArrayList<>();
-			    output.add("=== Elenco veicoli (" + veicoli.size() + ") ===");
-			    veicoli.forEach(v -> output.add(v.toString()));
-			    output.add("");
-			    GestioneFile.aggiungi(FILE_OUTPUT, output);
-			    log.debug("Scritti {} veicoli su {}", veicoli.size(), FILE_OUTPUT);
+			case "findAll" -> scriviOutput("Elenco veicoli", daoV.findAll());
+			case "search"  -> {
+			    Map<String, String> filtri = Utilities.parseParametri(t, 1);
+			    scriviOutput("Ricerca " + filtri, daoV.search(filtri));
 			}
 			default -> throw new AcademyException("Comando sconosciuto: " + t[0]);
 		}
@@ -128,5 +124,14 @@ public class QueryComponent {
 		} catch (NumberFormatException e) {
 			throw new AcademyException("Id non valido: " + s);
 		}
+	}
+	
+	private void scriviOutput(String titolo, List<? extends Veicolo> veicoli) {
+	    List<String> output = new ArrayList<>();
+	    output.add("=== " + titolo + " (" + veicoli.size() + ") ===");
+	    veicoli.forEach(v -> output.add(v.toString()));
+	    output.add("");
+	    GestioneFile.aggiungi(FILE_OUTPUT, output);
+	    log.debug("{}: scritti {} veicoli su {}", titolo, veicoli.size(), FILE_OUTPUT);
 	}
 }

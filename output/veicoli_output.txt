@@ -1,7 +1,6 @@
-=== Elenco veicoli (5) ===
-Moto(super=Veicolo(id=17, tipo_veicolo=moto, alimentazione=benzina, categoria=strada, colore=nero, marca=Ducati, modello=Monster, anno=2024, ruote=2, targa=AB12345, cc=937), tipo_forcella=null)
+=== Ricerca {anno=2023} (4) ===
 Bici(super=Veicolo(id=18, tipo_veicolo=bici, alimentazione=muscolare, categoria=citta, colore=verde, marca=Bianchi, modello=Spillo, anno=2023, ruote=2, targa=null, cc=null), corone=1, marce=21, freno=disco, sospensione=nessuna, pieghevole=true)
 Bici(super=Veicolo(id=21, tipo_veicolo=bici, alimentazione=muscolare, categoria=citta, colore=verde, marca=Bianchi, modello=Spillo, anno=2023, ruote=2, targa=null, cc=null), corone=1, marce=7, freno=disco, sospensione=nessuna, pieghevole=false)
-Macchina(super=Veicolo(id=22, tipo_veicolo=macchina, alimentazione=diesel, categoria=strada, colore=bianco, marca=Fiat, modello=500, anno=2025, ruote=4, targa=MK234GX, cc=1200), porte=4)
 Bici(super=Veicolo(id=24, tipo_veicolo=bici, alimentazione=muscolare, categoria=citta, colore=verde, marca=Bianchi, modello=Spillo, anno=2023, ruote=2, targa=null, cc=null), corone=1, marce=7, freno=disco, sospensione=nessuna, pieghevole=false)
+Bici(super=Veicolo(id=27, tipo_veicolo=bici, alimentazione=muscolare, categoria=citta, colore=verde, marca=Bianchi, modello=Spillo, anno=2023, ruote=2, targa=null, cc=null), corone=1, marce=7, freno=disco, sospensione=nessuna, pieghevole=false)
 

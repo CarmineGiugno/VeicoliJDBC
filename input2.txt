@@ -1,0 +1,15 @@
+add,macchina,ruote=4,alimentazione=diesel,categoria=strada,colore=bianco,marca=Fiat,anno=2025,modello=500,targa=MK234GX,cc=1200,porte=4
+add,moto,ruote=2,alimentazione=benzina,categoria=strada,colore=nero,marca=Ducati,anno=2024,modello=Monster,targa=AB12345,cc=937
+add,bici,ruote=2,alimentazione=muscolare,categoria=citta,colore=verde,marca=Bianchi,anno=2023,modello=Spillo,corone=1,marce=7,freno=disco,sospensione=nessuna,pieghevole=false
+findAll,veicolo
+findById,17
+findById,macchina,16
+update,macchina,16,marca=bmw,colore=rosso
+update,bici,18,marce=21,pieghevole=true
+update,macchina,16,id=99
+delete,macchina,16
+add,camion,ruote=6
+delete,macchina
+update,macchina,abc,colore=blu
+search,anno=2025,colore=nero
+search,tipo_veicolo=macchina,ordina=anno

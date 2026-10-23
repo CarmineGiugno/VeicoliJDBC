@@ -3,7 +3,9 @@ package com.betacom.veicolijdbc.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -11,6 +13,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import com.betacom.veicolijdbc.exceptions.AcademyException;
 import com.betacom.veicolijdbc.models.Bici;
 import com.betacom.veicolijdbc.models.Macchina;
 import com.betacom.veicolijdbc.models.Moto;
@@ -25,6 +28,25 @@ import lombok.extern.slf4j.Slf4j;
 public class VeicoloDAO {
 
 	private final NamedParameterJdbcTemplate jdbcTemplate;
+	
+	private record Filtro(String colonna, Function<String, Object> parser) {}
+
+	private static final Map<String, Filtro> FILTRI = Map.ofEntries(
+	        Map.entry("tipo_veicolo",  new Filtro("v.tipo_veicolo", s -> s)),
+	        Map.entry("alimentazione", new Filtro("v.alimentazione", s -> s)),
+	        Map.entry("categoria",     new Filtro("v.categoria", s -> s)),
+	        Map.entry("colore",        new Filtro("v.colore", s -> s)),
+	        Map.entry("marca",         new Filtro("v.marca", s -> s)),
+	        Map.entry("modello",       new Filtro("v.modello", s -> s)),
+	        Map.entry("targa",         new Filtro("v.targa", s -> s)),
+	        Map.entry("anno",          new Filtro("v.anno", Integer::valueOf)),
+	        Map.entry("ruote",         new Filtro("v.ruote", Integer::valueOf)),
+	        Map.entry("cc",            new Filtro("v.cc", Integer::valueOf)),
+	        Map.entry("porte",         new Filtro("m.porte", Integer::valueOf)),
+	        Map.entry("marce",         new Filtro("b.marce", Integer::valueOf)),
+	        Map.entry("corone",        new Filtro("b.corone", Integer::valueOf)),
+	        Map.entry("freno",         new Filtro("b.freno", s -> s)),
+	        Map.entry("pieghevole",    new Filtro("b.pieghevole", Boolean::valueOf)));
 
 	private static final String SELECT_FULL = """
 			SELECT v.*,
@@ -128,4 +150,48 @@ public class VeicoloDAO {
 		v.setCc(rs.getObject("cc", Integer.class));
 		return v;
 	}
+	
+	public List<Veicolo> search(Map<String, String> params) {
+	    StringBuilder sql = new StringBuilder(SELECT_FULL).append(" WHERE 1=1");
+	    MapSqlParameterSource sqlParams = new MapSqlParameterSource();
+	    String orderBy = "v.id";
+
+	    for (Map.Entry<String, String> e : params.entrySet()) {
+	        String key = e.getKey();
+	        String value = e.getValue();
+
+	        if (key.equals("ordina")) {
+	            orderBy = filtro(value).colonna();          // anche l'ordinamento passa dalla whitelist
+	            continue;
+	        }
+
+	        Filtro f = filtro(key);
+	        Object converted;
+	        try {
+	            converted = f.parser().apply(value);
+	        } catch (NumberFormatException ex) {
+	            throw new AcademyException("Valore non valido per " + key + ": " + value);
+	        }
+
+	        if (converted instanceof String) {               // testo: confronto senza maiuscole/minuscole
+	            sql.append(" AND LOWER(").append(f.colonna()).append(") = LOWER(:").append(key).append(")");
+	        } else {
+	            sql.append(" AND ").append(f.colonna()).append(" = :").append(key);
+	        }
+	        sqlParams.addValue(key, converted);
+	    }
+
+	    sql.append(" ORDER BY ").append(orderBy);
+	    log.debug("Search SQL: {}", sql);
+	    return jdbcTemplate.query(sql.toString(), sqlParams, this::mapRow);
+	}
+
+	private Filtro filtro(String key) {
+	    Filtro f = FILTRI.get(key);
+	    if (f == null) {
+	        throw new AcademyException("Filtro non valido: " + key + " (ammessi: " + FILTRI.keySet() + ")");
+	    }
+	    return f;
+	}
+	
 }
